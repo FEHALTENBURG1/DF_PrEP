@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:#cfccc4;}
+  .leaflet-container{background:#e9e7e1;font-family:'IBM Plex Mono',monospace;outline:none;}
+  .leaflet-control-attribution{font-family:'IBM Plex Mono',monospace;font-size:9px;background:rgba(255,255,255,.7);}
+  .leaflet-popup-content-wrapper{border-radius:2px;border:1px solid #111;box-shadow:0 6px 20px rgba(0,0,0,.18);}
+  .leaflet-popup-content{margin:10px 12px;}
+  .leaflet-popup-tip{border:1px solid #111;}
+  .reglabel{font-family:'Archivo',sans-serif;font-weight:700;font-size:11px;color:#1a1a1a;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;}
+  .reglabel b{display:block;font-size:14px;}
+</style>
+</helmet>
+<div style="height:100vh;width:100%;background:#cfccc4;display:flex;align-items:center;justify-content:center;padding:16px;font-family:'Archivo',sans-serif;">
+  <div id="prancha" data-screen-label="Mapa temático" style="width:100%;max-width:1340px;height:calc(100vh - 32px);background:#ffffff;border:1px solid #111;box-shadow:0 10px 40px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden;">
+
+    <div style="display:flex;align-items:stretch;border-bottom:2px solid #111;flex:none;">
+      <div style="display:flex;align-items:center;gap:13px;padding:11px 16px;flex:1;min-width:0;">
+        <div style="width:34px;height:34px;border:1.5px solid #111;display:flex;align-items:center;justify-content:center;flex:none;">
+          <div style="width:16px;height:16px;border:3px solid #111;border-radius:50%;"></div>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-weight:800;font-size:15px;letter-spacing:.1px;color:#111;line-height:1.18;white-space:nowrap;">UNIDADES DISPENSADORAS DE PEP · PrEP · TARV</div>
+          <div style="font-size:10.5px;color:#555;font-weight:500;letter-spacing:.1px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Rede de atenção ao HIV — Secretaria de Estado de Saúde do Distrito Federal (SES-DF)</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:9px 16px;border-left:1px solid #111;font-family:'IBM Plex Mono',monospace;flex:none;text-align:right;">
+        <div style="font-size:10px;color:#888;letter-spacing:.5px;">MAPA TEMÁTICO</div>
+        <div style="font-size:13px;color:#111;font-weight:600;">FOLHA {{ mapNum }}/05</div>
+        <div style="font-size:9.5px;color:#888;margin-top:2px;">SES-DF · v. 04/2025</div>
+      </div>
+    </div>
+
+    <div style="flex:1;display:flex;min-height:0;">
+
+      <div style="flex:1;position:relative;border-right:2px solid #111;min-width:0;">
+        <div ref="{{ mapRef }}" style="position:absolute;inset:0;"></div>
+
+        <div style="position:absolute;top:8px;left:8px;z-index:500;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#222;background:rgba(255,255,255,.82);border:1px solid #999;padding:2px 6px;pointer-events:none;letter-spacing:.3px;">NO {{ nwLabel }}</div>
+        <div style="position:absolute;bottom:8px;right:8px;z-index:500;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#222;background:rgba(255,255,255,.82);border:1px solid #999;padding:2px 6px;pointer-events:none;letter-spacing:.3px;">SE {{ seLabel }}</div>
+
+        <div style="position:absolute;top:10px;right:10px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(255,255,255,.85);border:1px solid #999;padding:6px 9px 7px;pointer-events:none;">
+          <div style="font:700 10px 'Archivo';letter-spacing:1.5px;color:#111;">N</div>
+          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:16px solid #111;"></div>
+          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:16px solid #b9b6ae;margin-top:-1px;"></div>
+        </div>
+
+        <div style="position:absolute;bottom:10px;left:10px;z-index:500;background:rgba(255,255,255,.88);border:1px solid #999;padding:5px 8px;pointer-events:none;">
+          <div style="display:flex;align-items:flex-end;">
+            <div style="height:7px;background:#111;border:1px solid #111;width:{{ scaleW }}px;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#333;margin-top:2px;width:{{ scaleW }}px;"><span>0</span><span>{{ scaleLabel }}</span></div>
+        </div>
+      </div>
+
+      <div style="width:316px;flex:none;display:flex;flex-direction:column;overflow-y:auto;background:#fcfbf9;">
+
+        <div style="padding:13px 15px 12px;border-bottom:1px solid #d9d6cf;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#9a968d;">MAPA {{ mapNum }}</div>
+          <div style="font-weight:800;font-size:17px;color:#111;line-height:1.12;margin-top:3px;">{{ mapName }}</div>
+          <div style="font-size:11px;color:#5a564e;line-height:1.4;margin-top:6px;">{{ mapDesc }}</div>
+        </div>
+
+        <div style="padding:11px 13px;border-bottom:1px solid #d9d6cf;display:flex;flex-direction:column;gap:5px;">
+          <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="5">
+            <button onClick="{{ tab.onClick }}" style="{{ tab.style }}">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.65;">{{ tab.num }}</span>
+              <span style="font-weight:600;font-size:12.5px;">{{ tab.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ showToggles }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:12px 15px;border-bottom:1px solid #d9d6cf;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.8px;color:#9a968d;margin-bottom:8px;">CAMADAS</div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.onClick }}" style="{{ t.style }}">
+                  <span style="{{ t.dot }}"></span>
+                  <span style="flex:1;text-align:left;font-weight:600;font-size:12px;">{{ t.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ t.count }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="padding:13px 15px;border-bottom:1px solid #d9d6cf;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.8px;color:#9a968d;margin-bottom:9px;">LEGENDA — {{ legendTitle }}</div>
+
+          <sc-if value="{{ isHeat }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="height:12px;border:1px solid #111;background:linear-gradient(90deg,#4575b4,#74add1,#fee090,#f46d43,#d73027);"></div>
+              <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#555;margin-top:4px;"><span>menor</span><span>oferta</span><span>maior</span></div>
+              <div style="font-size:10.5px;color:#5a564e;line-height:1.45;margin-top:9px;">Intensidade ponderada pelo nº de serviços de cada unidade (PEP-só = 1, completa = 3).</div>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <sc-for list="{{ legend }}" as="it" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:9px;">
+                <span style="{{ it.sw }}"></span>
+                <span style="flex:1;font-size:12px;color:#1a1a1a;line-height:1.2;">{{ it.label }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#777;">{{ it.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:10.5px;color:#7a766d;line-height:1.45;margin-top:10px;">{{ legendNote }}</div>
+        </div>
+
+        <div style="padding:13px 15px;border-bottom:1px solid #d9d6cf;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+            <div>
+              <div style="font-weight:800;font-size:22px;color:#111;line-height:1;font-family:'Archivo';">{{ s.value }}</div>
+              <div style="font-size:9.5px;color:#7a766d;line-height:1.2;margin-top:3px;text-transform:uppercase;letter-spacing:.3px;">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="padding:11px 15px;border-bottom:1px solid #d9d6cf;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.8px;color:#9a968d;margin-bottom:8px;">BASE CARTOGRÁFICA</div>
+          <div style="display:flex;gap:6px;">
+            <sc-for list="{{ basemaps }}" as="b" hint-placeholder-count="2">
+              <button onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:12px 15px;margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8a867d;line-height:1.55;">
+          <div style="color:#5a564e;">Fonte: Diretoria de Assistência Farmacêutica — SES-DF</div>
+          <div>diasf.sulog@saude.df.gov.br · versão 04/2025</div>
+          <div style="margin-top:5px;">SRC: SIRGAS 2000 · EPSG:4674</div>
+          <div>Base: © CARTO · © OpenStreetMap</div>
+          <div style="margin-top:8px;"><a href="./creditos.html" style="color:#5a564e;">Créditos →</a></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="flex:none;border-top:1px solid #111;padding:7px 16px;font-size:10px;color:#6a665e;line-height:1.4;background:#f4f2ee;">
+      * Nas Unidades Básicas de Saúde (UBS), a dispensação na PEP é apenas do esquema preferencial ARV: Tenofovir/Lamivudina (TDF/3TC) 300/300&nbsp;mg + Dolutegravir (DTG) 50&nbsp;mg ao dia. Coordenadas conferidas na base oficial do GeoServer SES-DF (Sala de Situação) e, onde ausentes, validadas manualmente — jun/2026.
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;initialView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;servico&quot;,&quot;tipo&quot;,&quot;densidade&quot;,&quot;regiao&quot;,&quot;cobertura&quot;],&quot;default&quot;:&quot;servico&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;basemap&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;claro&quot;,&quot;satelite&quot;],&quot;default&quot;:&quot;satelite&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {
+    view: 'servico', basemap: 'claro',
+    nwLabel: '—', seLabel: '—', scaleW: 90, scaleLabel: '— km',
+    toggles: { pep:true, prep:true, tarv:true },
+    legend: [], legendTitle:'', legendNote:'', isHeat:false, showToggles:true,
+    stats: [], mapNum:'01', mapName:'', mapDesc:''
+  };
+
+  mapRef = (el) => { if (el) this.mapEl = el; };
+
+  // palettes
+  C = {
+    pep:'#4477AA', prep:'#AA3377', tarv:'#228833',
+    tipos:{ 'UBS':'#4477AA','UPA':'#CCBB44','Emergência Hospitalar':'#EE6677','Policlínica':'#AA3377','Farmácia Escola':'#228833','Centro Especializado':'#4d4d4d' },
+    rsOrder:['Central','Centro-Sul','Leste','Norte','Oeste','Sudoeste','Sul'],
+    rsColors:{ 'Central':'#4655a0','Centro-Sul':'#efe9da','Leste':'#d9a23f','Norte':'#b0a684','Oeste':'#c7cae6','Sudoeste':'#7e89c6','Sul':'#e3caa0' },
+    canon:{ 'CENTRAL':'Central','CENTRO SUL':'Centro-Sul','LESTE':'Leste','NORTE':'Norte','OESTE':'Oeste','SUDOESTE':'Sudoeste','SUL':'Sul' },
+    covDispensa:'#1d7a4c', covCandidata:'#b5b0a3'
+  };
+  has(v){ return (v||'').trim().toLowerCase()==='sim'; }
+
+  componentDidMount(){
+    this.setState({
+      view: this.props.initialView || 'servico',
+      basemap: this.props.basemap || 'claro'
+    });
+    this.ready(() => this.boot());
+  }
+  ready(fn, n=0){
+    if (window.L && window.L.heatLayer && this.mapEl) return fn();
+    if (n>80) { if(window.L && this.mapEl) return fn(); return; }
+    setTimeout(()=>this.ready(fn,n+1), 60);
+  }
+
+  async boot(){
+    const mod = await import(new URL('data/units.js', document.baseURI).href);
+    this.units = mod.units;
+    try { const rmod = await import(new URL('data/regioes.js', document.baseURI).href); this.regioes = rmod.regioesSaude; } catch(e){ this.regioes=null; }
+    try { const cmod = await import(new URL('data/cobertura.js', document.baseURI).href); this.cobertura = cmod.cobertura; } catch(e){ this.cobertura=null; }
+    this.computeDerived();
+    const L = window.L;
+    const bounds = L.latLngBounds([[-16.06,-48.27],[-15.55,-47.58]]);
+    const map = L.map(this.mapEl, { zoomControl:true, attributionControl:true, minZoom:9, maxZoom:16 });
+    this.map = map;
+    map.fitBounds([[-16.04,-48.24],[-15.57,-47.62]], { padding:[6,6] });
+    L.control.scale({ imperial:false, position:'bottomright' }).remove?.();
+    this.addBasemap(this.state.basemap || 'claro');
+    this.buildGraticule();
+    this.buildLayers();
+    map.on('move zoom moveend zoomend', ()=>this.updateFrame());
+    this.updateFrame();
+    setTimeout(()=>{ map.invalidateSize(); this.applyView(this.props.initialView || 'servico'); }, 80);
+  }
+
+  computeDerived(){
+    // per-region points, centroids, hulls, counts
+    this.byReg = {};
+    for (const u of this.units){
+      (this.byReg[u.regiao] = this.byReg[u.regiao] || []).push(u);
+    }
+    this.regStats = {};
+    for (const r of Object.keys(this.byReg)){
+      const arr = this.byReg[r];
+      const lat = arr.reduce((a,u)=>a+u.lat,0)/arr.length;
+      const lng = arr.reduce((a,u)=>a+u.lng,0)/arr.length;
+      const full = arr.filter(u=>this.has(u.prep)&&this.has(u.tarv)).length;
+      this.regStats[r] = { n:arr.length, full, lat, lng, hull:this.hull(arr.map(u=>[u.lat,u.lng])) };
+    }
+    this.tipoCounts = {};
+    for (const u of this.units) this.tipoCounts[u.tipo]=(this.tipoCounts[u.tipo]||0)+1;
+    this.rsCount = {}; this.rsFull = {};
+    for (const u of this.units){ const k=this.C.canon[u.regiao]||u.regiao; this.rsCount[k]=(this.rsCount[k]||0)+1; if(this.has(u.prep)&&this.has(u.tarv)) this.rsFull[k]=(this.rsFull[k]||0)+1; }
+    // slugs de RA que possuem ao menos uma unidade dispensadora
+    this.raWithUnit = new Set(['asa-norte','asa-sul','brazlandia','candangolandia','ceilandia-norte','ceilandia-sul','sol-nascente','cruzeiro','scia','fercal','gama','guara-i','guara-ii','itapoa','jardim-botanico','lago-norte','lago-sul','nucleo-bandeirante','paranoa','planaltina','recanto-das-emas','riacho-fundo-i','riacho-fundo-ii','samambaia','santa-maria','sobradinho','sobradinho-ii','sao-sebastiao','taguatinga-norte','taguatinga-sul','varjao','vicente-pires','aguas-claras']);
+    // cobertura: universo de UBS/UPA/Hospital/Policlínica vs. confirmadas dispensadoras
+    if (this.cobertura){
+      this.covTipoCounts = {};
+      this.covDispCount = 0; this.covCandCount = 0;
+      for (const c of this.cobertura){
+        this.covTipoCounts[c.tipo] = (this.covTipoCounts[c.tipo]||0)+1;
+        if (c.dispensa) this.covDispCount++; else this.covCandCount++;
+      }
+    }
+  }
+
+  hull(pts){
+    if (pts.length<3) return pts;
+    const P = pts.slice().sort((a,b)=> a[1]-b[1] || a[0]-b[0]);
+    const cross=(o,a,b)=>(a[1]-o[1])*(b[0]-o[0])-(a[0]-o[0])*(b[1]-o[1]);
+    const lower=[]; for(const p of P){ while(lower.length>=2 && cross(lower[lower.length-2],lower[lower.length-1],p)<=0) lower.pop(); lower.push(p);} 
+    const upper=[]; for(let i=P.length-1;i>=0;i--){const p=P[i]; while(upper.length>=2 && cross(upper[upper.length-2],upper[upper.length-1],p)<=0) upper.pop(); upper.push(p);} 
+    lower.pop(); upper.pop();
+    return lower.concat(upper);
+  }
+
+  addBasemap(kind){
+    const L = window.L;
+    if (this.base) { this.map.removeLayer(this.base); this.base=null; }
+    if (kind==='satelite'){
+      this.base = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'© Esri', maxZoom:18 });
+    } else {
+      this.base = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution:'© OpenStreetMap © CARTO', subdomains:'abcd', maxZoom:19 });
+    }
+    this.base.addTo(this.map); this.base.bringToBack();
+  }
+
+  buildGraticule(){
+    const L = window.L;
+    this.grat = L.layerGroup().addTo(this.map);
+    const latMin=-16.05, latMax=-15.55, lngMin=-48.25, lngMax=-47.60, step=0.1;
+    const opt={ color:'#9c988e', weight:0.6, opacity:0.7, dashArray:'2,5', interactive:false };
+    for(let la=Math.ceil(latMin/step)*step; la<=latMax; la+=step) L.polyline([[la,lngMin],[la,lngMax]],opt).addTo(this.grat);
+    for(let lo=Math.ceil(lngMin/step)*step; lo<=lngMax; lo+=step) L.polyline([[latMin,lo],[latMax,lo]],opt).addTo(this.grat);
+  }
+
+  popupHtml(u){
+    const chip=(t,c)=>`<span style="display:inline-block;background:${c};color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:2px;font-family:Archivo,sans-serif;">${t}</span>`;
+    const chips=[ this.has(u.pep)?chip('PEP',this.C.pep):'', this.has(u.prep)?chip('PrEP',this.C.prep):'', this.has(u.tarv)?chip('TARV',this.C.tarv):'' ].join(' ');
+    return `<div style="font-family:Archivo,sans-serif;min-width:190px;max-width:240px;">
+      <div style="font-weight:700;font-size:13px;color:#111;line-height:1.25;">${u.unidade}</div>
+      <div style="font-size:10.5px;color:#777;margin-top:3px;font-family:'IBM Plex Mono',monospace;">${u.ra} · ${u.regiao}</div>
+      <div style="font-size:11px;color:#444;margin-top:2px;">${u.tipo}</div>
+      <div style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap;">${chips}</div>
+      ${u.obs?`<div style="font-size:10px;color:#666;margin-top:7px;line-height:1.4;border-top:1px solid #eee;padding-top:6px;">${u.obs}</div>`:''}
+    </div>`;
+  }
+
+  buildLayers(){
+    const L = window.L; const U=this.units;
+    // V1 service rings
+    this.lPep = L.layerGroup(); this.lPrep = L.layerGroup(); this.lTarv = L.layerGroup();
+    for(const u of U){
+      const ll=[u.lat,u.lng];
+      if(this.has(u.pep)) L.circleMarker(ll,{radius:8,color:this.C.pep,weight:2,fillColor:this.C.pep,fillOpacity:0.10}).bindPopup(this.popupHtml(u)).addTo(this.lPep);
+      if(this.has(u.prep)) L.circleMarker(ll,{radius:5.2,color:this.C.prep,weight:2,fillColor:this.C.prep,fillOpacity:0.12}).bindPopup(this.popupHtml(u)).addTo(this.lPrep);
+      if(this.has(u.tarv)) L.circleMarker(ll,{radius:2.6,color:'#fff',weight:1,fillColor:this.C.tarv,fillOpacity:1}).bindPopup(this.popupHtml(u)).addTo(this.lTarv);
+    }
+    // V2 tipo
+    this.lTipo = L.layerGroup();
+    for(const u of U){
+      L.circleMarker([u.lat,u.lng],{radius:6,color:'#fff',weight:1.3,fillColor:this.C.tipos[u.tipo]||'#888',fillOpacity:0.92}).bindPopup(this.popupHtml(u)).addTo(this.lTipo);
+    }
+    // V5 cobertura — todas as UBS/UPA/Hospital/Policlínica do DF (universo candidato)
+    this.lCovCand = L.layerGroup(); this.lCovDisp = L.layerGroup();
+    if (this.cobertura){
+      for (const c of this.cobertura){
+        const html = `<div style="font-family:Archivo,sans-serif;min-width:170px;max-width:230px;">
+          <div style="font-weight:700;font-size:13px;color:#111;line-height:1.25;">${c.nome}</div>
+          <div style="font-size:10.5px;color:#777;margin-top:3px;font-family:'IBM Plex Mono',monospace;">${c.regiao}</div>
+          <div style="font-size:11px;color:#444;margin-top:2px;">${c.tipo}</div>
+          <div style="margin-top:7px;">${c.dispensa
+            ? `<span style="display:inline-block;background:${this.C.covDispensa};color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:2px;">DISPENSA PEP/PrEP/TARV</span>`
+            : `<span style="display:inline-block;background:${this.C.covCandidata};color:#1a1a1a;font-size:10px;font-weight:600;padding:2px 7px;border-radius:2px;">CANDIDATA — não confirmada</span>`}</div>
+        </div>`;
+        if (c.dispensa){
+          L.circleMarker([c.lat,c.lng],{radius:6,color:'#fff',weight:1.3,fillColor:this.C.covDispensa,fillOpacity:0.95}).bindPopup(html).addTo(this.lCovDisp);
+        } else {
+          L.circleMarker([c.lat,c.lng],{radius:4,color:this.C.covCandidata,weight:1,fillColor:this.C.covCandidata,fillOpacity:0.55}).bindPopup(html).addTo(this.lCovCand);
+        }
+      }
+    }
+    // V3 heat
+    this.lHeatDots = L.layerGroup();
+    for(const u of U) L.circleMarker([u.lat,u.lng],{radius:1.4,color:'#555',weight:0,fillColor:'#444',fillOpacity:0.5,interactive:false}).addTo(this.lHeatDots);
+    const heatPts = U.map(u=>{ const c=(this.has(u.pep)?1:0)+(this.has(u.prep)?1:0)+(this.has(u.tarv)?1:0); return [u.lat,u.lng, c>=3?1.0:0.45]; });
+    this.lHeat = L.heatLayer(heatPts,{ radius:30, blur:22, max:1.0, minOpacity:0.25, gradient:{0.2:'#4575b4',0.4:'#74add1',0.6:'#fee090',0.8:'#f46d43',1.0:'#d73027'} });
+    // V4 real Região de Saúde polygons (44 RAs dissolved by RS) + proportional bubbles
+    this.lRegPoly = L.layerGroup();
+    this.lReg = L.layerGroup();
+    // group RA centroids per RS to position label/bubble
+    const rsPts = {};
+    if (this.regioes){
+      const gj = L.geoJSON(this.regioes, {
+        style: f => { const hasU=this.raWithUnit.has(f.properties.ra); const col=hasU?(this.C.rsColors[f.properties.rs]||'#bbb'):'#d8d6cf'; return { color:'#ffffff', weight:1, opacity:0.9, fillColor:col, fillOpacity:hasU?0.92:0.55 }; },
+        onEachFeature: (f,layer)=>{
+          const rs=f.properties.rs, ra=f.properties.ra; const hasU=this.raWithUnit.has(ra);
+          const c=layer.getBounds().getCenter();
+          if(hasU) (rsPts[rs]=rsPts[rs]||[]).push([c.lat,c.lng]);
+          const raName=ra.replace(/-/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+          layer.bindPopup(hasU
+            ? `<div style="font-family:Archivo,sans-serif;"><b>Região ${rs}</b><br><span style="font-size:11px;color:#555;">${raName}</span><br><span style="font-size:11px;color:#555;">${this.rsCount[rs]||0} unidades na região · ${this.rsFull[rs]||0} completas</span></div>`
+            : `<div style="font-family:Archivo,sans-serif;"><b>${raName}</b><br><span style="font-size:11px;color:#999;">Sem unidade dispensadora de PEP/PrEP/TARV</span></div>`);
+          layer.on('mouseover',()=>layer.setStyle({weight:2,fillOpacity:hasU?1:0.7}));
+          layer.on('mouseout',()=>layer.setStyle({weight:1,fillOpacity:hasU?0.92:0.55}));
+        }
+      });
+      gj.addTo(this.lRegPoly);
+    }
+    // outer outline of the whole DF for crispness, plus RS bubbles+labels
+    for (const rs of this.C.rsOrder){
+      const pts = rsPts[rs]; if(!pts||!pts.length) continue;
+      const lat = pts.reduce((a,p)=>a+p[0],0)/pts.length;
+      const lng = pts.reduce((a,p)=>a+p[1],0)/pts.length;
+      const n = this.rsCount[rs]||0; const full = this.rsFull[rs]||0;
+      const dark = ['Central','Sudoeste','Leste'].includes(rs);
+      const labelStyle = dark ? 'color:#fff;text-shadow:0 0 3px rgba(0,0,0,.7),0 0 3px rgba(0,0,0,.7);' : 'color:#1a1a1a;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;';
+      L.marker([lat,lng],{interactive:false,icon:L.divIcon({className:'',html:`<div style="font-family:Archivo,sans-serif;text-align:center;white-space:nowrap;${labelStyle}"><div style="font-weight:800;font-size:20px;line-height:1;">${n}</div><div style="font-weight:700;font-size:10px;letter-spacing:.4px;text-transform:uppercase;">${rs}</div></div>`,iconSize:[90,34],iconAnchor:[45,17]})}).addTo(this.lReg);
+    }
+  }
+
+  clearThematic(){
+    [this.lPep,this.lPrep,this.lTarv,this.lTipo,this.lHeat,this.lHeatDots,this.lReg,this.lRegPoly,this.lCovDisp,this.lCovCand].forEach(l=>{ if(l&&this.map.hasLayer(l)) this.map.removeLayer(l); });
+  }
+
+  applyView(view){
+    if(!this.map||!this.units) return;
+    this.clearThematic();
+    const C=this.C; const sw=(c,r=50,b='#fff',bw='1.3px')=>`display:inline-block;width:14px;height:14px;flex:none;border-radius:${r}%;background:${c};border:${bw} solid ${b};`;
+    let st={view};
+    if(view==='servico'){
+      const t=this.state.toggles;
+      if(t.pep) this.lPep.addTo(this.map);
+      if(t.prep) this.lPrep.addTo(this.map);
+      if(t.tarv) this.lTarv.addTo(this.map);
+      Object.assign(st,{
+        mapNum:'01', mapName:'Cobertura por Serviço',
+        mapDesc:'Cada unidade aparece como anéis concêntricos conforme os serviços disponíveis. Toda a rede dispensa PEP; PrEP e TARV concentram-se em 26 unidades.',
+        showToggles:true, isHeat:false,
+        legendTitle:'SERVIÇOS',
+        legend:[
+          {sw:`display:inline-block;width:16px;height:16px;flex:none;border-radius:50%;border:2px solid ${C.pep};background:transparent;`,label:'PEP — Profilaxia Pós-Exposição',count:'69'},
+          {sw:`display:inline-block;width:11px;height:11px;flex:none;border-radius:50%;border:2px solid ${C.prep};background:transparent;`,label:'PrEP — Profilaxia Pré-Exposição',count:'26'},
+          {sw:`display:inline-block;width:9px;height:9px;flex:none;border-radius:50%;background:${C.tarv};border:1px solid #fff;`,label:'TARV — Tratamento Antirretroviral',count:'26'}
+        ],
+        legendNote:'Anel externo azul = PEP; anel médio = PrEP; núcleo verde = TARV. Use as camadas para isolar cada serviço.',
+        stats:[{value:'69',label:'Unidades'},{value:'69',label:'com PEP'},{value:'26',label:'completas'}]
+      });
+    } else if(view==='tipo'){
+      this.lTipo.addTo(this.map);
+      const tk=['UBS','UPA','Emergência Hospitalar','Policlínica','Farmácia Escola','Centro Especializado'];
+      Object.assign(st,{
+        mapNum:'02', mapName:'Tipo de Unidade',
+        mapDesc:'Unidades classificadas pela natureza do estabelecimento de saúde que realiza a dispensação.',
+        showToggles:false, isHeat:false, legendTitle:'NATUREZA',
+        legend: tk.map(t=>({ sw:`display:inline-block;width:14px;height:14px;flex:none;border-radius:50%;background:${C.tipos[t]};border:1.3px solid #fff;`, label:t, count:String(this.tipoCounts[t]||0) })),
+        legendNote:'UBS predominam na atenção primária; emergências e UPAs garantem PEP em caráter de urgência.',
+        stats:[{value:'6',label:'Tipos'},{value:'39',label:'UBS'},{value:'24',label:'UPA + Emerg.'}]
+      });
+    } else if(view==='densidade'){
+      this.lHeatDots.addTo(this.map); this.lHeat.addTo(this.map);
+      Object.assign(st,{
+        mapNum:'03', mapName:'Densidade da Rede',
+        mapDesc:'Concentração espacial da oferta. Núcleos mais quentes reúnem mais unidades e maior cobertura de serviços.',
+        showToggles:false, isHeat:true, legendTitle:'INTENSIDADE',
+        legend:[], legendNote:'',
+        stats:[{value:'8',label:'em Ceilândia'},{value:'28',label:'Reg. Adm.'},{value:'69',label:'pontos'}]
+      });
+    } else if(view==='regiao'){
+      this.lRegPoly.addTo(this.map);
+      this.lReg.addTo(this.map);
+      Object.assign(st,{
+        mapNum:'04', mapName:'Síntese por Região de Saúde',
+        mapDesc:'Limites oficiais das 7 Regiões de Saúde do DF — agregação das 33 Regiões Administrativas. O rótulo indica o nº de unidades dispensadoras em cada região.',
+        showToggles:false, isHeat:false, legendTitle:'REGIÕES DE SAÚDE',
+        legend: this.C.rsOrder.map(r=>({ sw:`display:inline-block;width:14px;height:14px;flex:none;border-radius:3px;background:${this.C.rsColors[r]};border:1px solid #cfccc4;`, label:r, count:String(this.rsCount[r]||0) })).concat([{ sw:'display:inline-block;width:14px;height:14px;flex:none;border-radius:3px;background:#d8d6cf;opacity:.55;border:1px solid #cfccc4;', label:'RA sem unidade', count:'—' }]),
+        legendNote:'Apenas as Regiões Administrativas que possuem ao menos uma unidade dispensadora aparecem coloridas pela Região de Saúde. As demais RAs de Brasília são exibidas em cinza. Limites oficiais (SIRGAS 2000).',
+        stats:[{value:'7',label:'Regiões'},{value:'33',label:'Reg. Adm.'},{value:'69',label:'Unidades'}]
+      });
+    } else {
+      this.lCovDisp.addTo(this.map); this.lCovCand.addTo(this.map);
+      const tCounts = this.covTipoCounts||{};
+      const tk=['UBS','UPA','Hospital / Emergência','Policlínica'];
+      Object.assign(st,{
+        mapNum:'05', mapName:'Cobertura da Rede',
+        mapDesc:'Todas as UBS, UPA, Hospitais e Policlínicas do DF (base oficial SES-DF), comparando quais já dispensam PEP/PrEP/TARV e quais ainda são apenas candidatas — para avaliar a cobertura real da rede de dispensação.',
+        showToggles:false, isHeat:false, legendTitle:'STATUS DE DISPENSAÇÃO',
+        legend:[
+          {sw:`display:inline-block;width:14px;height:14px;flex:none;border-radius:50%;background:${C.covDispensa};border:1.3px solid #fff;`,label:'Dispensa PEP/PrEP/TARV',count:String(this.covDispCount||0)},
+          {sw:`display:inline-block;width:10px;height:10px;flex:none;border-radius:50%;background:${C.covCandidata};border:1px solid ${C.covCandidata};`,label:'Candidata (não confirmada)',count:String(this.covCandCount||0)}
+        ].concat(tk.map(t=>({ sw:'display:inline-block;width:0;height:0;', label:`· ${t}`, count:String(tCounts[t]||0) }))),
+        legendNote:'Universo de unidades do tipo UBS/UPA/Hospital/Policlínica cadastradas na base oficial da Sala de Situação SES-DF. "Dispensa" = unidade já confirmada na lista de 69 dispensadoras de PEP/PrEP/TARV; "Candidata" = mesmo tipo de estabelecimento, ainda sem confirmação de dispensação.',
+        stats:[{value:String((this.covDispCount||0)+(this.covCandCount||0)),label:'Unidades (UBS/UPA/Hosp/Poli)'},{value:String(this.covDispCount||0),label:'Dispensam hoje'},{value:String(this.covCandCount||0),label:'Cobertura potencial'}]
+      });
+    }
+    this.setState(st);
+  }
+
+  setView(v){ this.setState({view:v}, ()=>this.applyView(v)); }
+  toggleLayer(k){
+    const t={...this.state.toggles, [k]:!this.state.toggles[k]};
+    this.setState({toggles:t}, ()=>this.applyView('servico'));
+  }
+  setBasemap(b){ this.setState({basemap:b}); this.addBasemap(b); }
+
+  fmt(v,pos,neg){ const a=Math.abs(v).toFixed(3); return a+'° '+(v<0?neg:pos); }
+  updateFrame(){
+    if(!this.map) return;
+    const b=this.map.getBounds();
+    const nw=`${this.fmt(b.getNorth(),'N','S')}  ${this.fmt(b.getWest(),'E','W')}`;
+    const se=`${this.fmt(b.getSouth(),'N','S')}  ${this.fmt(b.getEast(),'E','W')}`;
+    // scale bar
+    const y=this.map.getSize().y/2;
+    const mPerPx=this.map.distance(this.map.containerPointToLatLng([0,y]), this.map.containerPointToLatLng([100,y]))/100;
+    let target=mPerPx*130; const pow=Math.pow(10,Math.floor(Math.log10(target))); let d=target/pow;
+    d = d>=5?5:d>=3?2.5:d>=2?2:1; const meters=d*pow;
+    const w=Math.round(meters/mPerPx);
+    const label = meters>=1000 ? (meters/1000).toLocaleString('pt-BR')+' km' : Math.round(meters)+' m';
+    this.setState({ nwLabel:nw, seLabel:se, scaleW:w, scaleLabel:label });
+  }
+
+  renderVals(){
+    const s=this.state; const C=this.C;
+    const tabBase='display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #cfccc4;background:#fff;cursor:pointer;text-align:left;transition:all .12s;font-family:Archivo,sans-serif;color:#1a1a1a;';
+    const tabActive='display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #111;background:#111;cursor:pointer;text-align:left;font-family:Archivo,sans-serif;color:#fff;';
+    const mk=(id,num,label)=>({num,label,onClick:()=>this.setView(id),style:(s.view===id?tabActive:tabBase)});
+    const tabs=[ mk('servico','01','Cobertura por Serviço'), mk('tipo','02','Tipo de Unidade'), mk('densidade','03','Densidade da Rede'), mk('regiao','04','Síntese por Região'), mk('cobertura','05','Cobertura da Rede') ];
+
+    const tg=(k,label,col,count)=>{ const on=s.toggles[k]; return {
+      label,count:String(count),onClick:()=>this.toggleLayer(k),
+      style:`display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border:1px solid ${on?col:'#d8d5cd'};background:${on?col+'14':'#fff'};cursor:pointer;color:${on?'#1a1a1a':'#aaa'};font-family:Archivo,sans-serif;`,
+      dot:`display:inline-block;width:12px;height:12px;border-radius:50%;flex:none;background:${on?col:'transparent'};border:2px solid ${on?col:'#ccc'};`
+    };};
+    const toggles=[ tg('pep','PEP',C.pep,69), tg('prep','PrEP',C.prep,26), tg('tarv','TARV',C.tarv,26) ];
+
+    const bmBase='flex:1;padding:7px 0;border:1px solid #cfccc4;background:#fff;cursor:pointer;font-size:11px;font-weight:600;font-family:Archivo,sans-serif;color:#555;';
+    const bmAct='flex:1;padding:7px 0;border:1px solid #111;background:#111;cursor:pointer;font-size:11px;font-weight:600;font-family:Archivo,sans-serif;color:#fff;';
+    const basemaps=[ {label:'Claro',onClick:()=>this.setBasemap('claro'),style:s.basemap==='claro'?bmAct:bmBase}, {label:'Satélite',onClick:()=>this.setBasemap('satelite'),style:s.basemap==='satelite'?bmAct:bmBase} ];
+
+    return {
+      mapRef:this.mapRef, tabs, toggles, basemaps,
+      showToggles:s.showToggles, isHeat:s.isHeat,
+      legend:s.legend, legendTitle:s.legendTitle, legendNote:s.legendNote,
+      stats:s.stats, mapNum:s.mapNum, mapName:s.mapName, mapDesc:s.mapDesc,
+      nwLabel:s.nwLabel, seLabel:s.seLabel, scaleW:s.scaleW, scaleLabel:s.scaleLabel
+    };
+  }
+}
+</script>
+</body>
+</html>
